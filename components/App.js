@@ -6,6 +6,12 @@ import Snackbar from 'material-ui/lib/snackbar';
 import {Spacing} from 'material-ui/lib/styles';
 import {StyleResizable} from 'material-ui/lib/mixins';
 
+// Define "enum" for Snackbar actions
+const SnackbarActions = {
+  UNDEFINED: 0,
+  UNDO_DELETE_MEAL: 1,
+};
+
 // 'App' has to use the traditional syntax because ES6
 // does not support React mixins. The StyleResizable
 // mixin is to support responsive design
@@ -32,8 +38,12 @@ const App = React.createClass({
       selectedMeal: 0,
       leftNavOpen: false,
       snackbarOpen: false,
+      snackbarMessage: '',
+      snackbarActionText: null,
+      snackbarAction: SnackbarActions.UNDEFINED,
       addMealDialogOpen: false,
       addMealDialogDefaultDatetime: null,
+      lastDeletedMeal: null,
     };
   },
 
@@ -76,30 +86,23 @@ const App = React.createClass({
         // Show Snackbar with error message
         addMealDialogOpen: false,
         snackbarOpen: true,
+        snackbarMessage: "A meal with this date and time already exists.",
+        snackbarActionText: null,
+        snackbarAction: SnackbarActions.UNDEFINED,
         selectedMeal: datetime.getTime(),
       });
     } else {
-      const loggedMeals = this.state.loggedMeals;
-      
-      // Add meal to array of logged meals
-      loggedMeals.push({
+    
+      this.addMeal({
         datetime: datetime,
         mealName: mealName,
         foodItems: []
       });
       
-      // Sort logged meals in reverse chronological order
-      loggedMeals.sort(this.compareDatetime);
-      loggedMeals.reverse();
-      
       this.setState({
         addMealDialogOpen: false,
-        loggedMeals: loggedMeals,
         selectedMeal: datetime.getTime(),
       });
-      
-      // Save to local storage
-      localStorage.loggedMeals = JSON.stringify(loggedMeals);
     }
   },
   
@@ -107,17 +110,44 @@ const App = React.createClass({
     this.deleteMeal(event.target.dataset.mealid);
   },
   
+  addMeal: function(meal) {
+    const loggedMeals = this.state.loggedMeals;
+
+    // Add meal to array of logged meals
+    loggedMeals.push(meal);
+      
+    // Sort logged meals in reverse chronological order
+    loggedMeals.sort(this.compareDatetime);
+    loggedMeals.reverse();
+      
+    this.setState({
+      loggedMeals: loggedMeals,
+    });
+      
+    // Save to local storage
+    localStorage.loggedMeals = JSON.stringify(loggedMeals);
+  },
+  
   deleteMeal: function(mealId) {
     const loggedMeals = this.state.loggedMeals;
+    let mealToDelete = null;
     for (let i = 0; i < loggedMeals.length; i++) {
       if (loggedMeals[i].datetime.getTime() == mealId) {
+        mealToDelete = loggedMeals[i];
         loggedMeals.splice(i, 1);
         break;
       }
     }
     
+    const message = mealToDelete.mealName + " on " + mealToDelete.datetime.toLocaleDateString() + " has been deleted.";
+    
     this.setState({
       loggedMeals: loggedMeals,
+      lastDeletedMeal: mealToDelete,
+      snackbarOpen: true,
+      snackbarMessage: message,
+      snackbarActionText: "Undo",
+      snackbarAction: SnackbarActions.UNDO_DELETE_MEAL,
       selectedMeal: 0,
     });
     
@@ -136,6 +166,15 @@ const App = React.createClass({
       return false;
     }
     return false;
+  },
+  
+  handleSnackbarActionTouchTap: function() {
+    switch (this.state.snackbarAction) {
+      case SnackbarActions.UNDO_DELETE_MEAL:
+        this.addMeal(this.state.lastDeletedMeal);
+        break;
+    }
+    this.handleRequestCloseSnackbar();
   },
   
   handleRequestCloseSnackbar: function() {
@@ -220,8 +259,10 @@ const App = React.createClass({
         />
         <Snackbar
           open={this.state.snackbarOpen}
-          message="A meal with this date and time already exists."
+          message={this.state.snackbarMessage}
+          action={this.state.snackbarActionText}
           autoHideDuration={4000}
+          onActionTouchTap={this.handleSnackbarActionTouchTap}
           onRequestClose={this.handleRequestCloseSnackbar}
         />
       </div>
