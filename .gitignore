@@ -1,0 +1,4 @@
+node_modules
+
+# Exclude compiled files
+compiled.js
