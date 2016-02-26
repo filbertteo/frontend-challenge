@@ -168,6 +168,9 @@ const App = React.createClass({
     return false;
   },
   
+  handleRequestAddFoodItem: function(foodItem) {
+  },
+  
   handleSnackbarActionTouchTap: function() {
     switch (this.state.snackbarAction) {
       case SnackbarActions.UNDO_DELETE_MEAL:
@@ -235,6 +238,7 @@ const App = React.createClass({
       <div>
         <AutoCompleteAppBar
           onLeftIconButtonTouchTap={this.handleTouchTapLeftIconButton}
+          onRequestAddFoodItem={this.handleRequestAddFoodItem}
           showMenuIconButton={!docked}
         />
         <div style={styles.root}>
