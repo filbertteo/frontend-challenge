@@ -105,6 +105,7 @@ class AutoCompleteAppBar extends React.Component {
     const {
       onLeftIconButtonTouchTap,
       showMenuIconButton,
+      searchMode,
     } = this.props;
   
     const {
@@ -136,7 +137,7 @@ class AutoCompleteAppBar extends React.Component {
       <div>
         <AppBar
           onLeftIconButtonTouchTap={onLeftIconButtonTouchTap}
-          title={autoCompleteElement}
+          title={searchMode ? autoCompleteElement : "My Meal Log"}
           showMenuIconButton={showMenuIconButton}
           style={style}
         />

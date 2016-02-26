@@ -2,6 +2,7 @@ import React from 'react';
 import AutoCompleteAppBar from './AutoCompleteAppBar';
 import AppLeftNav from './AppLeftNav';
 import AddMealDialog from './AddMealDialog';
+import MealDetailsPage from './MealDetailsPage';
 import Snackbar from 'material-ui/lib/snackbar';
 import {Spacing} from 'material-ui/lib/styles';
 import {StyleResizable} from 'material-ui/lib/mixins';
@@ -169,6 +170,25 @@ const App = React.createClass({
   },
   
   handleRequestAddFoodItem: function(foodItem) {
+    
+    const {loggedMeals, selectedMeal} = this.state;
+        
+    for (let i = 0; i < loggedMeals.length; i++) {
+      if (selectedMeal == loggedMeals[i].datetime.getTime()) {
+        loggedMeals[i].foodItems.push(foodItem);
+        break;
+      }
+    }
+      
+    this.setState({
+      loggedMeals: loggedMeals,
+    });
+      
+    // Save to local storage
+    localStorage.loggedMeals = JSON.stringify(loggedMeals);
+  },
+  
+  handleRequestDeleteFoodItem: function(index) {
   },
   
   handleSnackbarActionTouchTap: function() {
@@ -220,6 +240,16 @@ const App = React.createClass({
   
   render: function() {
   
+    const {
+      selectedMeal,
+      loggedMeals,
+      addMealDialogOpen,
+      addMealDialogDefaultDatetime,
+      snackbarOpen,
+      snackbarMessage,
+      snackbarActionText
+    } = this.state;
+  
     let {
       leftNavOpen,
     } = this.state;
@@ -234,15 +264,42 @@ const App = React.createClass({
       styles.root.paddingLeft = 256;
     }
     
+    let content = null;
+    
+    const searchMode = selectedMeal && typeof selectedMeal == 'number';
+    
+    if (selectedMeal) {
+      // Display details of selected meal
+      content = (
+        <MealDetailsPage
+          selectedMeal={selectedMeal}
+          loggedMeals={loggedMeals}
+          onRequestDeleteFoodItem={this.handleRequestDeleteFoodItem}
+        />
+      );
+    } else if (loggedMeals.length) {
+      // Logged meals already exist. Prompt user accordingly.
+      content = (
+        <p>Select a date or a meal from the left navigation side bar to view its details.</p>
+      );
+    } else {
+      // No logged meals. Assume new user and prompt accordingly.
+      content = (
+        <p>Welcome! Add a meal from the left navigation side bar to get started.</p>
+      );
+    }
+    
     return (
       <div>
         <AutoCompleteAppBar
           onLeftIconButtonTouchTap={this.handleTouchTapLeftIconButton}
           onRequestAddFoodItem={this.handleRequestAddFoodItem}
           showMenuIconButton={!docked}
+          searchMode={searchMode}
         />
         <div style={styles.root}>
           <div style={styles.content}>
+          {content}
           </div>
         </div>
         <AppLeftNav
@@ -252,19 +309,19 @@ const App = React.createClass({
           onRequestOpenAddMealDialog={this.handleRequestOpenAddMealDialog}
           onRequestDeleteMeal={this.handleRequestDeleteMeal}
           open={leftNavOpen}
-          loggedMeals={this.state.loggedMeals}
-          selectedMeal={this.state.selectedMeal}
+          loggedMeals={loggedMeals}
+          selectedMeal={selectedMeal}
         />
         <AddMealDialog
-          open={this.state.addMealDialogOpen}
+          open={addMealDialogOpen}
           onRequestClose={this.handleRequestCloseAddMealDialog}
           onRequestAddMeal={this.handleRequestAddMeal}
-          defaultDatetime={this.state.addMealDialogDefaultDatetime}
+          defaultDatetime={addMealDialogDefaultDatetime}
         />
         <Snackbar
-          open={this.state.snackbarOpen}
-          message={this.state.snackbarMessage}
-          action={this.state.snackbarActionText}
+          open={snackbarOpen}
+          message={snackbarMessage}
+          action={snackbarActionText}
           autoHideDuration={4000}
           onActionTouchTap={this.handleSnackbarActionTouchTap}
           onRequestClose={this.handleRequestCloseSnackbar}
