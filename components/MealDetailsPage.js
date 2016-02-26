@@ -1,4 +1,5 @@
 import React from 'react';
+import FoodItemNutritionTable from './FoodItemNutritionTable';
 import moment from 'moment';
 
 const MealDetailsPage = ({
@@ -24,9 +25,17 @@ const MealDetailsPage = ({
     
     if (foodItems.length) {
       // Placeholder
-      foodDetails = (
-        <p>{JSON.stringify(foodItems)}</p>
-      );
+      foodDetails = foodItems.map(foodItem => {
+        return (
+          <div>
+            <h3>{foodItem.name}</h3>
+            <h4>Portion: {foodItem.portions[0].name}</h4>
+            <FoodItemNutritionTable
+              foodItem={foodItem}
+            />
+          </div>
+        );
+      });
     } else {
       foodDetails = (
         <p>No food items have been added for this meal yet. Type a food name in the search bar above to find a food to add.</p>

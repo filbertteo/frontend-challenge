@@ -1,5 +1,6 @@
 import React from 'react';
 import Dialog from 'material-ui/lib/dialog';
+import FoodItemNutritionTable from './FoodItemNutritionTable';
 import FlatButton from 'material-ui/lib/flat-button';
 
 const AddFoodDialog = ({
@@ -22,7 +23,15 @@ const AddFoodDialog = ({
     />,
   ];
     
-  const foodDetails = JSON.stringify(foodItem);
+  const foodDetails = foodItem ? (
+      <div>
+        <p>Portion: {foodItem.portions[0].name}</p>
+        <FoodItemNutritionTable
+          foodItem={foodItem}
+        />
+      </div>
+    )
+    : null;
     
   return (
     <Dialog
