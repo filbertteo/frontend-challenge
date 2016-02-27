@@ -11,6 +11,7 @@ import {StyleResizable} from 'material-ui/lib/mixins';
 const SnackbarActions = {
   UNDEFINED: 0,
   UNDO_DELETE_MEAL: 1,
+  UNDO_DELETE_FOOD_ITEM: 2,
 };
 
 // 'App' has to use the traditional syntax because ES6
@@ -45,6 +46,8 @@ const App = React.createClass({
       addMealDialogOpen: false,
       addMealDialogDefaultDatetime: null,
       lastDeletedMeal: null,
+      lastDeletedFoodItem: null,
+      lastDeletedFoodItemIndex: 0,
     };
   },
 
@@ -171,12 +174,20 @@ const App = React.createClass({
   },
   
   handleRequestAddFoodItem: function(foodItem) {
+    this.addFoodItem(foodItem, null);
+  },
+  
+  addFoodItem: function(foodItem, index) {
     
     const {loggedMeals, selectedMeal} = this.state;
         
     for (let i = 0; i < loggedMeals.length; i++) {
       if (selectedMeal == loggedMeals[i].datetime.getTime()) {
-        loggedMeals[i].foodItems.push(foodItem);
+        if (typeof index == 'number' || typeof index == 'string') {
+          loggedMeals[i].foodItems.splice(index, 0, foodItem);
+        } else {
+          loggedMeals[i].foodItems.push(foodItem);
+        }
         break;
       }
     }
@@ -190,13 +201,44 @@ const App = React.createClass({
   },
   
   handleRequestDeleteFoodItem: function(event) {
-    console.log(event.currentTarget.dataset.fooditemindex);
+    this.deleteFoodItem(event.currentTarget.dataset.fooditemindex);
+  },
+  
+  deleteFoodItem: function(index) {
+    const {loggedMeals, selectedMeal} = this.state;
+    let foodItemToDelete = null;
+        
+    for (let i = 0; i < loggedMeals.length; i++) {
+      if (selectedMeal == loggedMeals[i].datetime.getTime()) {
+        foodItemToDelete = loggedMeals[i].foodItems[index];
+        loggedMeals[i].foodItems.splice(index, 1);
+        break;
+      }
+    }
+    
+    const message = foodItemToDelete.name + " has been deleted from this meal.";
+    
+    this.setState({
+      loggedMeals: loggedMeals,
+      lastDeletedFoodItem: foodItemToDelete,
+      lastDeletedFoodItemIndex: index,
+      snackbarOpen: true,
+      snackbarMessage: message,
+      snackbarActionText: "Undo",
+      snackbarAction: SnackbarActions.UNDO_DELETE_FOOD_ITEM,
+    });
+      
+    // Save to local storage
+    localStorage.loggedMeals = JSON.stringify(loggedMeals);
   },
   
   handleSnackbarActionTouchTap: function() {
     switch (this.state.snackbarAction) {
       case SnackbarActions.UNDO_DELETE_MEAL:
         this.addMeal(this.state.lastDeletedMeal);
+        break;
+      case SnackbarActions.UNDO_DELETE_FOOD_ITEM:
+        this.addFoodItem(this.state.lastDeletedFoodItem, this.state.lastDeletedFoodItemIndex);
         break;
     }
     this.handleRequestCloseSnackbar();

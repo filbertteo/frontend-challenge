@@ -2,7 +2,7 @@ import React from 'react';
 import FoodItemNutritionTable from './FoodItemNutritionTable';
 import Card from 'material-ui/lib/card/card';
 import CardActions from 'material-ui/lib/card/card-actions';
-import CardTitle from 'material-ui/lib/card/card-title';
+import CardHeader from 'material-ui/lib/card/card-header';
 import FlatButton from 'material-ui/lib/flat-button';
 import CardText from 'material-ui/lib/card/card-text';
 import moment from 'moment';
@@ -45,7 +45,7 @@ const MealDetailsPage = ({
           <Card
             style={styles.card}
           >
-            <CardTitle
+            <CardHeader
               title={foodItem.name}
               subtitle={foodItem.portions[0].name}
               actAsExpander={true}
@@ -87,7 +87,7 @@ const MealDetailsPage = ({
           <Card
             style={styles.card}
           >
-            <CardTitle
+            <CardHeader
               title={foodItem.name}
               subtitle={foodItem.portions[0].name}
               actAsExpander={true}
