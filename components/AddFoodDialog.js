@@ -25,7 +25,7 @@ const AddFoodDialog = ({
     
   const foodDetails = foodItem ? (
       <div>
-        <p>Portion: {foodItem.portions[0].name}</p>
+        <p>{foodItem.portions[0].name}</p>
         <FoodItemNutritionTable
           foodItem={foodItem}
         />

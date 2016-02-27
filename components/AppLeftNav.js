@@ -79,11 +79,11 @@ class AppLeftNav extends React.Component{
                   tooltip="Delete"
                   tooltipPosition="bottom-left"
                   onTouchTap={onRequestDeleteMeal}
+                  // Attach the meal ID to the delete button so that we can identify which meal to delete.
+                  data-mealid={meal.datetime.getTime()}
                 >
                   <FontIcon
                     className="material-icons"
-                    // Attach the meal ID to the delete button so that we can identify which meal to delete.
-                    data-mealid={meal.datetime.getTime()}
                   >
                     delete
                   </FontIcon>

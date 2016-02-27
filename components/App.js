@@ -62,6 +62,7 @@ const App = React.createClass({
   
   handleRequestChangeList: function(event, index) {
     this.setState({
+      leftNavOpen: false,
       selectedMeal: index,
     });
   },
@@ -108,7 +109,7 @@ const App = React.createClass({
   },
   
   handleRequestDeleteMeal: function(event) {
-    this.deleteMeal(event.target.dataset.mealid);
+    this.deleteMeal(event.currentTarget.dataset.mealid);
   },
   
   addMeal: function(meal) {
@@ -188,7 +189,8 @@ const App = React.createClass({
     localStorage.loggedMeals = JSON.stringify(loggedMeals);
   },
   
-  handleRequestDeleteFoodItem: function(index) {
+  handleRequestDeleteFoodItem: function(event) {
+    console.log(event.currentTarget.dataset.fooditemindex);
   },
   
   handleSnackbarActionTouchTap: function() {

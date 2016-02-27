@@ -1,5 +1,10 @@
 import React from 'react';
 import FoodItemNutritionTable from './FoodItemNutritionTable';
+import Card from 'material-ui/lib/card/card';
+import CardActions from 'material-ui/lib/card/card-actions';
+import CardTitle from 'material-ui/lib/card/card-title';
+import FlatButton from 'material-ui/lib/flat-button';
+import CardText from 'material-ui/lib/card/card-text';
 import moment from 'moment';
 
 const MealDetailsPage = ({
@@ -8,7 +13,18 @@ const MealDetailsPage = ({
   onRequestDeleteFoodItem,
 }) => {
 
-  let title = '';
+  const styles = {
+    heading: {
+      fontSize: 24,
+      fontWeight: 400,
+      marginBottom: 16,
+    },
+    card: {
+      marginBottom: 8,
+    },
+  };
+
+  let heading = '';
   let foodItems = [];
   let foodDetails = null;
   
@@ -17,23 +33,38 @@ const MealDetailsPage = ({
     for (let i = 0; i < loggedMeals.length; i++) {
       if (selectedMeal == loggedMeals[i].datetime.getTime()) {
         const meal = loggedMeals[i];
-        title = meal.mealName + " @ " + moment(meal.datetime).format("Do MMM YYYY, h:mm a");
+        heading = meal.mealName + " @ " + moment(meal.datetime).format("Do MMM YYYY, h:mm a");
         foodItems = meal.foodItems;
         break;
       }
     }
     
     if (foodItems.length) {
-      // Placeholder
-      foodDetails = foodItems.map(foodItem => {
+      foodDetails = foodItems.map((foodItem, index) => {
         return (
-          <div>
-            <h3>{foodItem.name}</h3>
-            <h4>Portion: {foodItem.portions[0].name}</h4>
-            <FoodItemNutritionTable
-              foodItem={foodItem}
+          <Card
+            style={styles.card}
+          >
+            <CardTitle
+              title={foodItem.name}
+              subtitle={foodItem.portions[0].name}
+              actAsExpander={true}
+              showExpandableButton={true}
             />
-          </div>
+            <CardText expandable={true}>
+              <FoodItemNutritionTable
+                foodItem={foodItem}
+              />
+            </CardText>
+            <CardActions expandable={true}>
+              <FlatButton
+                label="Delete"
+                primary={true}
+                onTouchTap={onRequestDeleteFoodItem}
+                data-fooditemindex={index}
+              />
+            </CardActions>
+          </Card>
         );
       });
     } else {
@@ -43,7 +74,7 @@ const MealDetailsPage = ({
     }
   } else if (typeof selectedMeal == 'string') {
     // A date is selected
-    title = "All meals on " + selectedMeal;
+    heading = "All meals on " + selectedMeal;
     for (let i = 0; i < loggedMeals.length; i++) {
       if (selectedMeal == loggedMeals[i].datetime.toLocaleDateString()) {
         foodItems.push(...loggedMeals[i].foodItems);
@@ -51,10 +82,25 @@ const MealDetailsPage = ({
     }
     
     if (foodItems.length) {
-      // Placeholder
-      foodDetails = (
-        <p>{JSON.stringify(foodItems)}</p>
-      );
+      foodDetails = foodItems.map((foodItem, index) => {
+        return (
+          <Card
+            style={styles.card}
+          >
+            <CardTitle
+              title={foodItem.name}
+              subtitle={foodItem.portions[0].name}
+              actAsExpander={true}
+              showExpandableButton={true}
+            />
+            <CardText expandable={true}>
+              <FoodItemNutritionTable
+                foodItem={foodItem}
+              />
+            </CardText>
+          </Card>
+        );
+      });
     } else {
       foodDetails = (
         <p>No food items have been added for this date yet. Select a meal for this date using the left navigation side bar to start adding food items to that meal.</p>
@@ -64,7 +110,7 @@ const MealDetailsPage = ({
 
   return (
     <div>
-    <h2>{title}</h2>
+    <div style={styles.heading}>{heading}</div>
       {foodDetails}
     </div>
   )
