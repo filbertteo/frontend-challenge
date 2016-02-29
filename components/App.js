@@ -2,9 +2,17 @@ import React from 'react';
 import AutoCompleteAppBar from './AutoCompleteAppBar';
 import AppLeftNav from './AppLeftNav';
 import AddMealDialog from './AddMealDialog';
+import MealDetailsPage from './MealDetailsPage';
 import Snackbar from 'material-ui/lib/snackbar';
 import {Spacing} from 'material-ui/lib/styles';
 import {StyleResizable} from 'material-ui/lib/mixins';
+
+// Define "enum" for Snackbar actions
+const SnackbarActions = {
+  UNDEFINED: 0,
+  UNDO_DELETE_MEAL: 1,
+  UNDO_DELETE_FOOD_ITEM: 2,
+};
 
 // 'App' has to use the traditional syntax because ES6
 // does not support React mixins. The StyleResizable
@@ -32,8 +40,14 @@ const App = React.createClass({
       selectedMeal: 0,
       leftNavOpen: false,
       snackbarOpen: false,
+      snackbarMessage: '',
+      snackbarActionText: null,
+      snackbarAction: SnackbarActions.UNDEFINED,
       addMealDialogOpen: false,
       addMealDialogDefaultDatetime: null,
+      lastDeletedMeal: null,
+      lastDeletedFoodItem: null,
+      lastDeletedFoodItemIndex: 0,
     };
   },
 
@@ -51,6 +65,7 @@ const App = React.createClass({
   
   handleRequestChangeList: function(event, index) {
     this.setState({
+      leftNavOpen: false,
       selectedMeal: index,
     });
   },
@@ -76,48 +91,68 @@ const App = React.createClass({
         // Show Snackbar with error message
         addMealDialogOpen: false,
         snackbarOpen: true,
+        snackbarMessage: "A meal with this date and time already exists.",
+        snackbarActionText: null,
+        snackbarAction: SnackbarActions.UNDEFINED,
         selectedMeal: datetime.getTime(),
       });
     } else {
-      const loggedMeals = this.state.loggedMeals;
-      
-      // Add meal to array of logged meals
-      loggedMeals.push({
+    
+      this.addMeal({
         datetime: datetime,
         mealName: mealName,
         foodItems: []
       });
       
-      // Sort logged meals in reverse chronological order
-      loggedMeals.sort(this.compareDatetime);
-      loggedMeals.reverse();
-      
       this.setState({
         addMealDialogOpen: false,
-        loggedMeals: loggedMeals,
         selectedMeal: datetime.getTime(),
       });
-      
-      // Save to local storage
-      localStorage.loggedMeals = JSON.stringify(loggedMeals);
     }
   },
   
   handleRequestDeleteMeal: function(event) {
-    this.deleteMeal(event.target.dataset.mealid);
+    this.deleteMeal(event.currentTarget.dataset.mealid);
+  },
+  
+  addMeal: function(meal) {
+    const loggedMeals = this.state.loggedMeals;
+
+    // Add meal to array of logged meals
+    loggedMeals.push(meal);
+      
+    // Sort logged meals in reverse chronological order
+    loggedMeals.sort(this.compareDatetime);
+    loggedMeals.reverse();
+      
+    this.setState({
+      loggedMeals: loggedMeals,
+    });
+      
+    // Save to local storage
+    localStorage.loggedMeals = JSON.stringify(loggedMeals);
   },
   
   deleteMeal: function(mealId) {
     const loggedMeals = this.state.loggedMeals;
+    let mealToDelete = null;
     for (let i = 0; i < loggedMeals.length; i++) {
       if (loggedMeals[i].datetime.getTime() == mealId) {
+        mealToDelete = loggedMeals[i];
         loggedMeals.splice(i, 1);
         break;
       }
     }
     
+    const message = mealToDelete.mealName + " on " + mealToDelete.datetime.toLocaleDateString() + " has been deleted.";
+    
     this.setState({
       loggedMeals: loggedMeals,
+      lastDeletedMeal: mealToDelete,
+      snackbarOpen: true,
+      snackbarMessage: message,
+      snackbarActionText: "Undo",
+      snackbarAction: SnackbarActions.UNDO_DELETE_MEAL,
       selectedMeal: 0,
     });
     
@@ -136,6 +171,77 @@ const App = React.createClass({
       return false;
     }
     return false;
+  },
+  
+  handleRequestAddFoodItem: function(foodItem) {
+    this.addFoodItem(foodItem, null);
+  },
+  
+  addFoodItem: function(foodItem, index) {
+    
+    const {loggedMeals, selectedMeal} = this.state;
+        
+    for (let i = 0; i < loggedMeals.length; i++) {
+      if (selectedMeal == loggedMeals[i].datetime.getTime()) {
+        if (typeof index == 'number' || typeof index == 'string') {
+          loggedMeals[i].foodItems.splice(index, 0, foodItem);
+        } else {
+          loggedMeals[i].foodItems.push(foodItem);
+        }
+        break;
+      }
+    }
+      
+    this.setState({
+      loggedMeals: loggedMeals,
+    });
+      
+    // Save to local storage
+    localStorage.loggedMeals = JSON.stringify(loggedMeals);
+  },
+  
+  handleRequestDeleteFoodItem: function(event) {
+    this.deleteFoodItem(event.currentTarget.dataset.fooditemindex);
+  },
+  
+  deleteFoodItem: function(index) {
+    const {loggedMeals, selectedMeal} = this.state;
+    let foodItemToDelete = null;
+        
+    for (let i = 0; i < loggedMeals.length; i++) {
+      if (selectedMeal == loggedMeals[i].datetime.getTime()) {
+        foodItemToDelete = loggedMeals[i].foodItems[index];
+        loggedMeals[i].foodItems.splice(index, 1);
+        break;
+      }
+    }
+    
+    const message = foodItemToDelete.name + " has been deleted from this meal.";
+    
+    this.setState({
+      loggedMeals: loggedMeals,
+      lastDeletedFoodItem: foodItemToDelete,
+      lastDeletedFoodItemIndex: index,
+      snackbarOpen: true,
+      snackbarMessage: message,
+      snackbarActionText: "Undo",
+      snackbarAction: SnackbarActions.UNDO_DELETE_FOOD_ITEM,
+    });
+      
+    // Save to local storage
+    localStorage.loggedMeals = JSON.stringify(loggedMeals);
+  },
+  
+  handleSnackbarActionTouchTap: function() {
+    switch (this.state.snackbarAction) {
+      case SnackbarActions.UNDO_DELETE_MEAL:
+        this.addMeal(this.state.lastDeletedMeal);
+        break;
+      case SnackbarActions.UNDO_DELETE_FOOD_ITEM:
+        this.addFoodItem(this.state.lastDeletedFoodItem, this.state.lastDeletedFoodItemIndex);
+        break;
+    }
+    this.handleRequestCloseSnackbar();
   },
   
   handleRequestCloseSnackbar: function() {
@@ -178,6 +284,16 @@ const App = React.createClass({
   
   render: function() {
   
+    const {
+      selectedMeal,
+      loggedMeals,
+      addMealDialogOpen,
+      addMealDialogDefaultDatetime,
+      snackbarOpen,
+      snackbarMessage,
+      snackbarActionText
+    } = this.state;
+  
     let {
       leftNavOpen,
     } = this.state;
@@ -192,14 +308,42 @@ const App = React.createClass({
       styles.root.paddingLeft = 256;
     }
     
+    let content = null;
+    
+    const searchMode = selectedMeal && typeof selectedMeal == 'number';
+    
+    if (selectedMeal) {
+      // Display details of selected meal
+      content = (
+        <MealDetailsPage
+          selectedMeal={selectedMeal}
+          loggedMeals={loggedMeals}
+          onRequestDeleteFoodItem={this.handleRequestDeleteFoodItem}
+        />
+      );
+    } else if (loggedMeals.length) {
+      // Logged meals already exist. Prompt user accordingly.
+      content = (
+        <p>Select a date or a meal from the left navigation side bar to view its details.</p>
+      );
+    } else {
+      // No logged meals. Assume new user and prompt accordingly.
+      content = (
+        <p>Welcome! Add a meal from the left navigation side bar to get started.</p>
+      );
+    }
+    
     return (
       <div>
         <AutoCompleteAppBar
           onLeftIconButtonTouchTap={this.handleTouchTapLeftIconButton}
+          onRequestAddFoodItem={this.handleRequestAddFoodItem}
           showMenuIconButton={!docked}
+          searchMode={searchMode}
         />
         <div style={styles.root}>
           <div style={styles.content}>
+          {content}
           </div>
         </div>
         <AppLeftNav
@@ -209,19 +353,21 @@ const App = React.createClass({
           onRequestOpenAddMealDialog={this.handleRequestOpenAddMealDialog}
           onRequestDeleteMeal={this.handleRequestDeleteMeal}
           open={leftNavOpen}
-          loggedMeals={this.state.loggedMeals}
-          selectedMeal={this.state.selectedMeal}
+          loggedMeals={loggedMeals}
+          selectedMeal={selectedMeal}
         />
         <AddMealDialog
-          open={this.state.addMealDialogOpen}
+          open={addMealDialogOpen}
           onRequestClose={this.handleRequestCloseAddMealDialog}
           onRequestAddMeal={this.handleRequestAddMeal}
-          defaultDatetime={this.state.addMealDialogDefaultDatetime}
+          defaultDatetime={addMealDialogDefaultDatetime}
         />
         <Snackbar
-          open={this.state.snackbarOpen}
-          message="A meal with this date and time already exists."
+          open={snackbarOpen}
+          message={snackbarMessage}
+          action={snackbarActionText}
           autoHideDuration={4000}
+          onActionTouchTap={this.handleSnackbarActionTouchTap}
           onRequestClose={this.handleRequestCloseSnackbar}
         />
       </div>

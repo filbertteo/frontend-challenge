@@ -1,6 +1,8 @@
 import React from 'react';
 import AppBar from 'material-ui/lib/app-bar';
-import AutoComplete from 'material-ui/lib/auto-complete';
+import AutoComplete from './AutoComplete';
+import AddFoodDialog from './AddFoodDialog';
+import MenuItem from 'material-ui/lib/menus/menu-item';
 import {Spacing} from 'material-ui/lib/styles';
 import request from 'request';
 
@@ -12,27 +14,55 @@ class AutoCompleteAppBar extends React.Component {
     super();
     
     this.handleUpdateInput = this.handleUpdateInput.bind(this);
+    this.handleAutoCompleteSelection = this.handleAutoCompleteSelection.bind(this);
+    this.handleRequestCloseAddFoodDialog = this.handleRequestCloseAddFoodDialog.bind(this);
+    this.handleRequestAddFoodItem = this.handleRequestAddFoodItem.bind(this);
     this.getSearchSuggestions = this.getSearchSuggestions.bind(this);
 
     this.state = {
       searchTerm: '',
       foodItems: [],
       dataSource: [],
+      addFoodDialogOpen: false,
+      selectedFoodItem: null,
     };
   }
 
   handleUpdateInput(searchTerm) {
-    this.setState({
-      searchTerm: searchTerm,
-    });
-    // Only show suggestions when at least 3 characters are typed
-    if (searchTerm.length < 3) {
+    if (this.state.searchTerm != searchTerm) {
       this.setState({
-        dataSource: [],
+        searchTerm: searchTerm,
       });
-    } else {
-      this.getSearchSuggestions(searchTerm);
+      // Only show suggestions when at least 3 characters are typed
+      if (searchTerm.length < 3) {
+        this.setState({
+          dataSource: [],
+        });
+      } else {
+        this.getSearchSuggestions(searchTerm);
+      }
     }
+  }
+  
+  handleAutoCompleteSelection(chosenRequest, index, dataSource) {
+    if (index > -1) {
+      // If index == -1, it means "Enter" key was pressed instead of selecting one of the menu items, so we ignore it.
+      this.setState({
+        selectedFoodItem: this.state.foodItems[index],
+        addFoodDialogOpen: true,
+      });
+    }
+  }
+  
+  handleRequestCloseAddFoodDialog() {
+    this.setState({
+      addFoodDialogOpen: false,
+    });
+  }
+  
+  handleRequestAddFoodItem() {
+    this.handleRequestCloseAddFoodDialog();
+    this.props.onRequestAddFoodItem(this.state.selectedFoodItem);
   }
   
   getSearchSuggestions(searchTerm) {
@@ -54,7 +84,16 @@ class AutoCompleteAppBar extends React.Component {
         } else {
           this.setState({
             foodItems: [],
-            dataSource: ["No food items found",],
+            dataSource: [{
+              // Should not actually need to set the text, since this item is disabled, but the text is used as React component key
+              text: searchTerm,
+              value: (
+                <MenuItem
+                  primaryText="No food items found"
+                  disabled={true}
+                />
+              ),
+            },],
           });
         }
       }
@@ -63,13 +102,27 @@ class AutoCompleteAppBar extends React.Component {
   
   render() {
   
+    const {
+      onLeftIconButtonTouchTap,
+      showMenuIconButton,
+      searchMode,
+    } = this.props;
+  
+    const {
+      dataSource,
+      addFoodDialogOpen,
+      selectedFoodItem
+    } = this.state;
+  
     const autoCompleteElement = (
       <AutoComplete
         hintText="Search food item"
         fullWidth={true}
         filter={AutoComplete.noFilter}
-        dataSource={this.state.dataSource}
+        dataSource={dataSource}
         onUpdateInput={this.handleUpdateInput}
+        onNewRequest={this.handleAutoCompleteSelection}
+        triggerUpdateOnFocus={true}
       />
     );
   
@@ -81,12 +134,20 @@ class AutoCompleteAppBar extends React.Component {
     }
     
     return (
-      <AppBar
-        onLeftIconButtonTouchTap={this.props.onLeftIconButtonTouchTap}
-        title={autoCompleteElement}
-        showMenuIconButton={this.props.showMenuIconButton}
-        style={style}
-      />
+      <div>
+        <AppBar
+          onLeftIconButtonTouchTap={onLeftIconButtonTouchTap}
+          title={searchMode ? autoCompleteElement : "My Meal Log"}
+          showMenuIconButton={showMenuIconButton}
+          style={style}
+        />
+        <AddFoodDialog
+          open={addFoodDialogOpen}
+          foodItem={selectedFoodItem}
+          onRequestClose={this.handleRequestCloseAddFoodDialog}
+          onRequestAddFoodItem={this.handleRequestAddFoodItem}
+        />
+      </div>
     )
   }
 }

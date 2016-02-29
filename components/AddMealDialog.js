@@ -131,6 +131,14 @@ class AddMealDialog extends React.Component {
       onRequestClose,
       defaultDatetime
     } = this.props;
+    
+    const {
+      mealValue,
+      mealName,
+      customMealName,
+      selectedDate,
+      selectedTime,
+    } = this.state;
 
     const actions = [
       <FlatButton
@@ -141,7 +149,7 @@ class AddMealDialog extends React.Component {
       <FlatButton
         label="Add"
         primary={true}
-        disabled={!(this.state.mealName && this.state.selectedDate && this.state.selectedTime)}
+        disabled={!(mealName && selectedDate && selectedTime)}
         onTouchTap={this.addMeal}
       />,
     ];
@@ -166,7 +174,7 @@ class AddMealDialog extends React.Component {
           onChange={this.handleSelectTime}
         />
         <DropDownMenu
-          value={this.state.mealValue}
+          value={mealValue}
           onChange={this.handleDropDownMenuSelection}
           floatingLabelText="Meal name"
         >
@@ -177,11 +185,12 @@ class AddMealDialog extends React.Component {
         </DropDownMenu>
         <TextField
           ref={component => this._mealNameInput = component}
-          value={this.state.customMealName}
+          value={customMealName}
           maxLength="15"
           onChange={this.updateCustomMealName}
-          disabled={this.state.mealValue != 4}
-          hintText={this.state.mealValue == 4 ? "Enter meal name" : ""}
+          onEnterKeyDown={(mealName && selectedDate && selectedTime) ? this.addMeal : null}
+          disabled={mealValue != 4}
+          hintText={mealValue == 4 ? "Enter meal name" : ""}
         />
       </Dialog>
     )
